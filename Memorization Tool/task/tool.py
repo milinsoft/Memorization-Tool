@@ -47,20 +47,43 @@ class MemorizationTool:
     def practice_flashcards():
         session = Session()
 
-        result_list = session.query(FlashCards)
+        result_list = session.query(FlashCards).all()
         if not result_list:
             print("There is no flashcard to practice!")
 
         else:
             for row in result_list:
                 print(f"Question: {row.question}")
-                print('Please press "y" to see the answer or press "n" to skip:')
+                print('press "y" to see the answer:\npress "n" to skip:\npress "u" to update:')
                 answer = input().lower()
                 match answer:
                     case "y":
                         print(f"Answer: {row.answer}")
                     case "n":
                         pass
+                    case "u":
+                        # updating code
+                        _choice = None
+                        while not _choice:
+                            _choice = input('press "d" to delete the flashcard:\npress "e" to edit the flashcard:\n')
+                            match _choice:
+                                case "d":
+                                    session.delete(row)
+                                    session.commit()
+                                case "e":
+                                    print(f"current question: {row.question}")
+                                    # try with ".update()" method?
+                                    new_question = input("please write a new question:\n")
+                                    if new_question:
+                                        row.question = new_question
+                                        print(f"current answer: {row.answer}")
+                                        new_answer = input("please write a new answer:\n")
+                                        if new_answer:
+                                            row.answer = new_answer
+                                        session.commit()
+                                case _:
+                                    _choice = None  # reseting to None and continue the loop
+                                    print(f"{_choice} is not an option")
 
     def menu(self):
         options = "1. Add flashcards\n"\

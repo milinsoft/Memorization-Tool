@@ -1,7 +1,6 @@
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
 
 WRONG = "WRONG OPTION\n"
 
@@ -46,8 +45,8 @@ class MemorizationTool:
     @staticmethod
     def practice_flashcards():
         session = Session()
-
-        result_list = session.query(FlashCards).all()
+        query = session.query(FlashCards)
+        result_list = query.all()
         if not result_list:
             print("There is no flashcard to practice!")
 
@@ -75,11 +74,13 @@ class MemorizationTool:
                                     # try with ".update()" method?
                                     new_question = input("please write a new question:\n")
                                     if new_question:
-                                        row.question = new_question
                                         print(f"current answer: {row.answer}")
                                         new_answer = input("please write a new answer:\n")
                                         if new_answer:
-                                            row.answer = new_answer
+                                            question_filter = query.filter(FlashCards.id == row.id)
+                                            question_filter.update({"question": new_question,
+                                                                    "answer": new_answer}
+                                                                   )
                                         session.commit()
                                 case _:
                                     _choice = None  # reseting to None and continue the loop

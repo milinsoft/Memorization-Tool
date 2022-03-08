@@ -20,18 +20,18 @@ class MemorizationTool:
 
     def flashcards_menu(self):
         def add_flashcard():
-            question, answer =\
-                None, None
+            question = None
+            answer = None
 
             while not question:
                 question = input("Question:\n").strip()
-
             while not answer:
                 answer = input("Answer:\n").strip()
 
             new_flashcard = FlashCards(question=question, answer=answer)
+            session = Session()
             session.add(new_flashcard)
-            session.commit()
+            session.commit()  # session will be terminated after comit command
 
         while True:
             _option = input("1. Add a new flashcard\n2. Exit\n")
@@ -43,9 +43,8 @@ class MemorizationTool:
                 case _:
                     print(f"{_option} is not an option")
 
-    def practice_flashcards(self):
-
-        Session = sessionmaker(bind=engine)
+    @staticmethod
+    def practice_flashcards():
         session = Session()
 
         result_list = session.query(FlashCards)
@@ -85,8 +84,4 @@ if __name__ == '__main__':
     engine = create_engine('sqlite:///flashcard.db?check_same_thread=False')
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
-    session = Session()
-
     MemorizationTool().menu()
-
-# optimize redundant session creating

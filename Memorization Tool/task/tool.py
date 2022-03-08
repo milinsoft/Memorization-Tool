@@ -1,16 +1,22 @@
-# write your code here
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.orm import sessionmaker
+
 
 WRONG = "WRONG OPTION\n"
 
+Base = declarative_base()
+
+
+class FlashCards(Base):
+    __tablename__ = 'flashcard'
+
+    id = Column(Integer, primary_key=True)
+    question = Column(String)
+    answer = Column(String)
+
 
 class MemorizationTool:
-
-    def __init__(self):
-        self.flashcards = {}
-
-    @classmethod
-    def from_string(cls):
-        pass
 
     def flashcards_menu(self):
         def add_flashcard():
@@ -23,7 +29,9 @@ class MemorizationTool:
             while not answer:
                 answer = input("Answer:\n").strip()
 
-            self.flashcards[question] = answer
+            new_flashcard = FlashCards(question=question, answer=answer)
+            session.add(new_flashcard)
+            session.commit()
 
         while True:
             _option = input("1. Add a new flashcard\n2. Exit\n")
@@ -36,16 +44,22 @@ class MemorizationTool:
                     print(f"{_option} is not an option")
 
     def practice_flashcards(self):
-        if not self.flashcards:
+
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        result_list = session.query(FlashCards)
+        if not result_list:
             print("There is no flashcard to practice!")
+
         else:
-            for question in self.flashcards:
-                print(f"Question: {question}")
+            for row in result_list:
+                print(f"Question: {row.question}")
                 print('Please press "y" to see the answer or press "n" to skip:')
                 answer = input().lower()
                 match answer:
                     case "y":
-                        print(f"Answer: {self.flashcards[question]}")
+                        print(f"Answer: {row.answer}")
                     case "n":
                         pass
 
@@ -68,5 +82,11 @@ class MemorizationTool:
 
 
 if __name__ == '__main__':
+    engine = create_engine('sqlite:///flashcard.db?check_same_thread=False')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
     MemorizationTool().menu()
 
+# optimize redundant session creating

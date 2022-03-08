@@ -272,6 +272,15 @@ files:
     if __name__ == '__main__':
         FlashCardTest().run_tests()
   learner_created: false
+- name: flashcards.db
+  visible: true
+  learner_created: true
+- name: flashcard.db
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/12259#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Tue, 08 Mar 2022 14:01:59 UTC
 record: -1

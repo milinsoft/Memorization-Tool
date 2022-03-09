@@ -1,7 +1,8 @@
+from string import Template
+
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from string import Template
 
 WRONG = "WRONG OPTION\n"
 error_msg_template = Template("$value is not an option")
@@ -15,6 +16,7 @@ class FlashCards(Base):
     id = Column(Integer, primary_key=True)
     question = Column(String)
     answer = Column(String)
+    box = Column(Integer, default=1)
 
 
 class MemorizationTool:
@@ -49,7 +51,9 @@ class MemorizationTool:
             # updating code
             _choice = None
             while not _choice:
-                _choice = input('press "d" to delete the flashcard:\npress "e" to edit the flashcard:\n')
+                msg = 'press "d" to delete the flashcard:\n' \
+                      'press "e" to edit the flashcard:'
+                _choice = input(msg)
                 match _choice:
                     case "d":
                         session.delete(row)
@@ -67,12 +71,33 @@ class MemorizationTool:
                         print(error_msg_template.substitute(value=_choice))
             session.commit()
 
+        def update_box_num():
+            msg = 'press "y" if your answer is correct:\npress "n" if your answer is wrong:'
+            option = None
+            while option not in {"y", "n"}:
+                option = input(msg)
+            match option:
+                case "y":
+                    ...
+                    if row.box == 3:
+                        session.delete(row)
+                    else:
+                        # remake with session.update()
+                        # row.box += 1
+                        id_filter = query.filter(FlashCards.id == row.id)
+                        id_filter.update({'box': row.box+1})
+
+                case "n":
+                    if row.box in {2, 3}:
+                        id_filter = query.filter(FlashCards.id == row.id)
+                        id_filter.update({'box': row.box-1})
+            session.commit()
+
         session = Session()
         query = session.query(FlashCards)
         result_list = query.all()
         if not result_list:
             print("There is no flashcard to practice!")
-
         else:
             for row in result_list:
                 print(f"Question: {row.question}")
@@ -80,6 +105,7 @@ class MemorizationTool:
                 match answer:
                     case "y":
                         print(f"Answer: {row.answer}")
+                        update_box_num()
                     case "n":
                         pass
                     case "u":

@@ -5,44 +5,55 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 WRONG = "WRONG OPTION\n"
+FLASHCARDS_MAIN_MENU = "1. Add a new flashcard\n2. Exit\n"
+FLASHCARD_UPDATE_MENU = '''press "d" to delete the flashcard:
+press "e" to edit the flashcard:'''
+FLASHCARDS_NAVIGATION_OPTIONS = '''press "y" to see the answer:
+press "n" to skip:
+press "u" to update:\n'''
+
+BOX_UPDATE_OPTIONS = '''press "y" if your answer is correct:
+press "n" if your answer is wrong:'''
+
 error_msg_template = Template("$value is not an option")
-new_value_template = Template("current $var: $value\n"
-                              "please write a new $var:\n")
+flashcard_value_template = Template('''current $key_name: $key_value
+please write a new $key_name:\n''')
+
 
 Base = declarative_base()
 
 
 class FlashCards(Base):
     __tablename__ = 'flashcard'
-
     id = Column(Integer, primary_key=True)
-    question = Column(String)
-    answer = Column(String)
+    question = Column(String(200))
+    answer = Column(String(200))
     box = Column(Integer, default=1)
 
 
 class MemorizationTool:
 
+    @staticmethod
+    def add_flashcard():
+        question = None
+        answer = None
+
+        while not question:
+            question = input("Question:\n").strip()
+        while not answer:
+            answer = input("Answer:\n").strip()
+
+        new_flashcard = FlashCards(question=question, answer=answer)
+        session = Session()
+        session.add(new_flashcard)
+        session.commit()  # session will be terminated after comit command
+
     def flashcards_menu(self):
-        def add_flashcard():
-            question = None
-            answer = None
-
-            while not question:
-                question = input("Question:\n").strip()
-            while not answer:
-                answer = input("Answer:\n").strip()
-
-            new_flashcard = FlashCards(question=question, answer=answer)
-            session = Session()
-            session.add(new_flashcard)
-            session.commit()  # session will be terminated after comit command
         while True:
-            _option = input("1. Add a new flashcard\n"
-                            "2. Exit\n")
+            _option = input(FLASHCARDS_MAIN_MENU)
             match _option:
                 case "1":
-                    add_flashcard()
+                    MemorizationTool.add_flashcard()
                 case "2":
                     return self.menu()
                 case _:
@@ -51,48 +62,50 @@ class MemorizationTool:
     @staticmethod
     def update_flashcard(session, query, row):
         _choice = None
-        while not _choice:
-            _choice = input('press "d" to delete the flashcard:\n'
-                            'press "e" to edit the flashcard:')
+        while _choice not in {"d", "e"}:
+            _choice = input(FLASHCARD_UPDATE_MENU)
             match _choice:
                 case "d":
                     session.delete(row)
-                    session.commit()
                 case "e":
+                    print(flashcard_value_template.substitute(
+                        key_name="question",
+                        key_value=row.question
+                    )
+                    )
+                    new_question = input()
 
-                    new_question = input(f"current question: {row.question}\n"
-                                         "please write a new question:\n")
+                    print(flashcard_value_template.substitute(
+                        key_name="answer",
+                        key_value=row.answer
+                    )
+                    )
 
-                    new_answer = input(f"current answer: {row.answer}\n"
-                                       "please write a new answer:\n")
-                    if all([new_question and new_answer]):
+                    new_answer = input()
+                    if all([new_question, new_answer]):
                         _filter = query.filter(FlashCards.id == row.id)
                         _filter.update({"question": new_question,
                                         "answer": new_answer}
                                        )
                 case _:
-                    _choice = None  # reseting to None & continue the loop
                     print(error_msg_template.substitute(value=_choice))
         session.commit()
 
     @staticmethod
     def update_box_num(session, query, row):
         option = None
+        id_filter = query.filter(FlashCards.id == row.id)
+
         while option not in {"y", "n"}:
-            option = input('press "y" if your answer is correct:\n'
-                           'press "n" if your answer is wrong:')
+            option = input(BOX_UPDATE_OPTIONS)
         match option:
             case "y":
-                ...
                 if row.box == 3:
                     session.delete(row)
                 else:
-                    id_filter = query.filter(FlashCards.id == row.id)
                     id_filter.update({'box': row.box + 1})
-
             case "n":
                 if row.box in {2, 3}:
-                    id_filter = query.filter(FlashCards.id == row.id)
                     id_filter.update({'box': row.box - 1})
         session.commit()
 
@@ -107,10 +120,7 @@ class MemorizationTool:
         else:
             for row in result_list:
                 print(f"Question: {row.question}")
-                msg = 'press "y" to see the answer:\n' \
-                      'press "n" to skip:\n' \
-                      'press "u" to update:'
-                answer = input(msg).lower()
+                answer = input(FLASHCARDS_NAVIGATION_OPTIONS).lower()
                 match answer:
                     case "y":
                         print(f"Answer: {row.answer}")

@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 
 WRONG = "WRONG OPTION\n"
 error_msg_template = Template("$value is not an option")
+new_value_template = Template("current $var: $value\n"
+                              "please write a new $var:\n")
 
 Base = declarative_base()
 
@@ -36,7 +38,8 @@ class MemorizationTool:
             session.add(new_flashcard)
             session.commit()  # session will be terminated after comit command
         while True:
-            _option = input("1. Add a new flashcard\n2. Exit\n")
+            _option = input("1. Add a new flashcard\n"
+                            "2. Exit\n")
             match _option:
                 case "1":
                     add_flashcard()
@@ -51,39 +54,40 @@ class MemorizationTool:
             # updating code
             _choice = None
             while not _choice:
-                msg = 'press "d" to delete the flashcard:\n' \
-                      'press "e" to edit the flashcard:'
-                _choice = input(msg)
+                _choice = input('press "d" to delete the flashcard:\n'
+                                'press "e" to edit the flashcard:')
                 match _choice:
                     case "d":
                         session.delete(row)
                         session.commit()
                     case "e":
-                        new_question = input(f"current question: {row.question}\nplease write a new question:\n")
-                        new_answer = input(f"current answer: {row.answer}\nplease write a new answer:\n")
+
+                        new_question = input(f"current question: {row.question}\n"
+                                             "please write a new question:\n")
+
+                        new_answer = input(f"current answer: {row.answer}\n"
+                                           "please write a new answer:\n")
                         if all([new_question and new_answer]):
-                            question_filter = query.filter(FlashCards.id == row.id)
-                            question_filter.update({"question": new_question,
-                                                    "answer": new_answer}
-                                                   )
+                            _filter = query.filter(FlashCards.id == row.id)
+                            _filter.update({"question": new_question,
+                                            "answer": new_answer}
+                                           )
                     case _:
-                        _choice = None  # reseting to None and continue the loop
+                        _choice = None  # reseting to None & continue the loop
                         print(error_msg_template.substitute(value=_choice))
             session.commit()
 
         def update_box_num():
-            msg = 'press "y" if your answer is correct:\npress "n" if your answer is wrong:'
             option = None
             while option not in {"y", "n"}:
-                option = input(msg)
+                option = input('press "y" if your answer is correct:\n'
+                               'press "n" if your answer is wrong:')
             match option:
                 case "y":
                     ...
                     if row.box == 3:
                         session.delete(row)
                     else:
-                        # remake with session.update()
-                        # row.box += 1
                         id_filter = query.filter(FlashCards.id == row.id)
                         id_filter.update({'box': row.box+1})
 
@@ -101,7 +105,10 @@ class MemorizationTool:
         else:
             for row in result_list:
                 print(f"Question: {row.question}")
-                answer = input('press "y" to see the answer:\npress "n" to skip:\npress "u" to update:').lower()
+                msg = 'press "y" to see the answer:\n' \
+                      'press "n" to skip:\n' \
+                      'press "u" to update:'
+                answer = input(msg).lower()
                 match answer:
                     case "y":
                         print(f"Answer: {row.answer}")

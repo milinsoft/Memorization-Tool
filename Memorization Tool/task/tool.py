@@ -49,53 +49,55 @@ class MemorizationTool:
                     print(error_msg_template.substitute(value=_option))
 
     @staticmethod
+    def update_flashcard(session, query, row):
+        _choice = None
+        while not _choice:
+            _choice = input('press "d" to delete the flashcard:\n'
+                            'press "e" to edit the flashcard:')
+            match _choice:
+                case "d":
+                    session.delete(row)
+                    session.commit()
+                case "e":
+
+                    new_question = input(f"current question: {row.question}\n"
+                                         "please write a new question:\n")
+
+                    new_answer = input(f"current answer: {row.answer}\n"
+                                       "please write a new answer:\n")
+                    if all([new_question and new_answer]):
+                        _filter = query.filter(FlashCards.id == row.id)
+                        _filter.update({"question": new_question,
+                                        "answer": new_answer}
+                                       )
+                case _:
+                    _choice = None  # reseting to None & continue the loop
+                    print(error_msg_template.substitute(value=_choice))
+        session.commit()
+
+    @staticmethod
+    def update_box_num(session, query, row):
+        option = None
+        while option not in {"y", "n"}:
+            option = input('press "y" if your answer is correct:\n'
+                           'press "n" if your answer is wrong:')
+        match option:
+            case "y":
+                ...
+                if row.box == 3:
+                    session.delete(row)
+                else:
+                    id_filter = query.filter(FlashCards.id == row.id)
+                    id_filter.update({'box': row.box + 1})
+
+            case "n":
+                if row.box in {2, 3}:
+                    id_filter = query.filter(FlashCards.id == row.id)
+                    id_filter.update({'box': row.box - 1})
+        session.commit()
+
+    @staticmethod
     def practice_flashcards():
-        def update_flashcard():
-            # updating code
-            _choice = None
-            while not _choice:
-                _choice = input('press "d" to delete the flashcard:\n'
-                                'press "e" to edit the flashcard:')
-                match _choice:
-                    case "d":
-                        session.delete(row)
-                        session.commit()
-                    case "e":
-
-                        new_question = input(f"current question: {row.question}\n"
-                                             "please write a new question:\n")
-
-                        new_answer = input(f"current answer: {row.answer}\n"
-                                           "please write a new answer:\n")
-                        if all([new_question and new_answer]):
-                            _filter = query.filter(FlashCards.id == row.id)
-                            _filter.update({"question": new_question,
-                                            "answer": new_answer}
-                                           )
-                    case _:
-                        _choice = None  # reseting to None & continue the loop
-                        print(error_msg_template.substitute(value=_choice))
-            session.commit()
-
-        def update_box_num():
-            option = None
-            while option not in {"y", "n"}:
-                option = input('press "y" if your answer is correct:\n'
-                               'press "n" if your answer is wrong:')
-            match option:
-                case "y":
-                    ...
-                    if row.box == 3:
-                        session.delete(row)
-                    else:
-                        id_filter = query.filter(FlashCards.id == row.id)
-                        id_filter.update({'box': row.box+1})
-
-                case "n":
-                    if row.box in {2, 3}:
-                        id_filter = query.filter(FlashCards.id == row.id)
-                        id_filter.update({'box': row.box-1})
-            session.commit()
 
         session = Session()
         query = session.query(FlashCards)
@@ -112,11 +114,11 @@ class MemorizationTool:
                 match answer:
                     case "y":
                         print(f"Answer: {row.answer}")
-                        update_box_num()
+                        MemorizationTool.update_box_num(session, query, row)
                     case "n":
                         pass
                     case "u":
-                        update_flashcard()
+                        MemorizationTool.update_flashcard(session, query, row)
 
     def menu(self):
         options = "1. Add flashcards\n"\
